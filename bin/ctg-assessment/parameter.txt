@@ -1,0 +1,262 @@
+# 設定ファイル
+# コメント；＃が先頭の行です。自由に記載できます。
+# 空白行は読み飛ばされます。
+# スペースは文中に自由に挿入できます。
+
+
+#フィルター パラメーター
+
+#FIR フィルタ インパルスレスポンス数 (2 のn 乗 + 1)
+Filter-ImpulseResponseCount: 4097
+
+#ローパス フィルタのカットオフ 周波数 [Hz]
+Filter-LowPassCutoffFreqency: 0.03
+
+#ハイカット フィルターのカットオフ周波数
+Filter-HighCutoffFrequency: 1.5
+
+#データ点補間を行った後のサンプリング レート [Hz]
+Filter-InterpolationPointSumplingRate: 100.0
+
+
+#
+#基線定義のパラメーター
+#ルール
+#・1分間に2 サイクル (周波数 0.03 Hz:Filter-LowPassCutoffFreqency) 以下の周波数域の信号について
+#  2分間以上 (Baseline-KeepingTimeLimit) 
+#  持続的に ±5 bpm (Baseline-VariabilityRangeUpper,Baseline-VariabilityRangeLower)
+#  以内の変動に収まる箇所を基線とする。
+#・基線の検索をする際は一過性徐脈と一過性頻脈以外の領域を対象とする。
+#・基線の持続時間で平均をとり、基線の bpm を定める。
+#・基線の平均値 x が
+#  x < 110 (Baseline-BpmLevelRangeLower) bpm:徐脈とする
+#  110 (Baseline-BpmLevelRangeLower) <= x <= 160 (Baseline-BpmLevelRangeUpper) :正常とする
+#  x > 160 (Baseline-BpmLevelRangeUpper) :頻脈とする
+
+#基線変動の許容値の上限 [bpm]
+Baseline-VariabilityRangeUpper: 5.0
+
+#基線変動の許容値の下限 [bpm]
+Baseline-VariabilityRangeLower: -5.0
+
+#基線の正常範囲の上限 [bpm]
+Baseline-BpmLevelRangeUpper: 160.0
+
+#基線の正常範囲の下限 [bpm]
+Baseline-BpmLevelRangeLower: 110.0
+
+#基線と認める持続時間の下限値 [s]
+Baseline-KeepingTimeLimit: 120.0
+
+#基線の最も低いレベル [bpm]
+Baseline-BpmLevelLowest: 80.0
+
+#基線細変動定義のパラメーター
+#ルール
+#・計測対象範囲は基線部
+#・1 分間に 2 サイクル (0.03 Hz) 以上の周波数の変動。単位は bpm
+#・消失:基線の持続時間で平均をとり、平均値 x が x < 2.5 bpm (BaselineVariability-LostThreshold)
+#・減少:基線の持続時間で平均をとり、
+#  平均値 x が 2.5 (BaselineVariability-LostThreshold) <= x < 5.5 bpm 
+#  (BaselineVariability-NormalRangeLower)
+#・中等度:基線の持続時間で平均をとり、
+#  平均値 x が5.5 (BaselineVariability-NormalRangeLower) <= x < 25.5 bpm 
+#  (BaselineVariability-NormalRangeUpper)
+#・増加:基線の持続時間で平均をとり、平均値 x が x >= 25.5 bpm (BaselineVariability-NormalRangeUpper)
+#・サイナソイダル パターン:0.03(BaselineVariability-SinusoidalFrquencyRangeLower) - 0.1 Hz 
+#  １分間以上 (BaselineVariability-SinusoidalDuration) の持続。
+#  サイン波の振幅 x は5 < x <= 35 bpm
+
+#消失と判定する心拍数の閾値 [bpm]
+BaselineVariability-LostThreshold: 2.5
+
+#中等度の状態の上限を示す閾値 [bpm]
+BaselineVariability-NormalRangeUpper: 25.5
+
+#中等度の状態の下限を示す閾値 [bpm]
+#BaselineVariability-NormalRangeLower: 5.5
+BaselineVariability-NormalRangeLower: 5.5
+
+#サイナソイダル パターンを検査する周波数の上限 [Hz]
+BaselineVariability-SinusoidalFrquencyRangeUpper: 0.1
+
+#サイナソイダル パターンを検査する周波数の下限 [Hz]
+BaselineVariability-SinusoidalFrquencyRangeLower: 0.03
+
+#サイナソイダル パターンの最低持続時間 [s]
+BaselineVariability-SinusoidalDuration: 60.0
+
+#サイナソイダル パターンの振幅の上限 [bpm]
+BaselineVariability-SinusoidalRangeUpper: 35.0
+
+#サイナソイダル パターンの振幅の下限 [bpm]
+BaselineVariability-SinusoidalRangeLower: 5.0
+
+
+#徐脈定義のパラメーター
+#ルール
+#・以下の定義に合致する開始点、最下点、回復点を有する波形を一過性徐脈とする。
+#・開始点は、基線から信号が ± 5 bpm を超えたとき、その時刻からさかのぼって傾きが 0 になる時刻とする。
+#・最下点は開始点より5 bpm以上低い、傾きが 0 (負→正) になった点とする。
+#・回復点は 20 秒(Deceleration-RecoveryTime)以上元の基線の bpm ± 5 bpm 以内の変動で
+#  安定した最初の点か新たに生成された基線の最初の点とする。
+#・回復点は最下点より (開始点の bpm - 最下点の bpm) × 1/4 (Deceleration-RecoveryCoefficien) 
+#  以上高い傾きが 0 (負から 0) の点とする。
+#・開始点が存在し、10 分 (Deceleration-DurationUpperLimit) 以上最下点か回復点が形成されない時、
+#  一過性徐脈は存在せず、元の基線から次の基線に移行したと扱う。
+#・開始点以降回復点に達するまでに傾きが 0 (負→正) になった点が二つ以上ある場合は、
+#  時間的に早い点から最下点として扱うか検討する (これを最下点候補とする)。
+#  時間的に早い最下点候補から傾きが 0 (正→負) になる点までの bpm 上昇幅をとり、
+#  これが開始点から最下点候補までの bpm 減少幅の 1/4 (Deceleration-RecoveryCoefficien) 以上であった場合、
+#  最下点として扱う。条件を満たさない場合は、2 番目以降の谷も 1 番目の谷と同じ扱いを行う。
+#・(開始点の bpm - 最下点の bpm) × 1/4 (Deceleration-RecoveryCoefficien) 以下で基線が生成された場合、
+#  一過性徐脈としない。
+#・子宮収縮 30 以下の値を子宮収縮の基線とする。
+#・子宮収縮の振幅の 30% (Deceleration-UterusThreshold) を超えたら子宮収縮開始とする。
+
+#開始点の bpm - 最下点の bpm にこの計数を乗じた値が回復点とみなすかどうかの閾値 [-]
+Deceleration-RecoveryCoefficient: 0.25
+
+＃ 回復点を判定する際、元の基線に安定する時間長 [s]
+Deceleration-RecoveryTime: 40.0
+
+#一過性徐脈がこの時間以上回復されないときは一過性徐脈は存在しないと判定する閾値 [s]
+Deceleration-DurationUpperLimit: 600.0
+
+#子宮収縮開始を判断する閾値。振幅の % で指定[%]
+Deceleration-UterusThreshold: 10.0
+
+
+# ED (早発一過性徐脈)定義のパラメーター
+# ルール
+#・一過性徐脈の開始点から最下点までの時間 >= 30 秒 (Deceleration-StartToPeakTimeLimit)
+#・① 0 秒 (Deceleration-UterusSynchronizedRangeLower) < (一過性徐脈の開始時間 - 子宮収縮開始時間) < 
+#  5 秒 (Deceleration-UterusSynchronizedRangeUpper)
+#・② 0 秒 (Deceleration-UterusSynchronizedRangeLower) < (一過性徐脈の最下点時間 - 子宮収縮ピーク時間) < 
+#  5 秒(Deceleration-UterusSynchronizedRangeUpper)
+#・③ 0 秒  (Deceleration-UterusSynchronizedRangeLower)< (一過性徐脈の回復時間 - 子宮収縮終了時間) < 5 秒
+#  (Deceleration-UterusSynchronizedRangeUpper)
+#・①②③のうち2個以上成立ならEDと判定する
+
+#ED 判定における (一過性徐脈時間 – 子宮収縮時間) の上限 [s]
+Deceleration-EdUterusSynchronizedRangeUpper: 5.0
+
+#ED 判定における (一過性徐脈時間 – 子宮収縮時間) の下限 [s]
+Deceleration-EdUterusSynchronizedRangeLower: 0.0
+
+#一過性徐脈開始からピークまでの時間の上限 [s]
+Deceleration-StartToPeakTimeLimit: 30.0
+
+
+#LD (遅発一過性徐脈) 定義のパラメーター
+#ルール
+#・一過性徐脈の開始点から最下点までの時間 >= 30 秒 (Deceleration-StartToPeakTimeLimit)
+#・①(一過性徐脈の開始時間 - 子宮収縮開始時間) >= 5 秒 (Deceleration-UterusSynchronizedRangeUpper)
+#・②(一過性徐脈の最下点時間 - 子宮収縮ピーク時間) >= 5 秒 (Deceleration-UterusSynchronizedRangeUpper)
+#・③(一過性徐脈の回復時間 - 子宮収縮終了時間) >=  5 秒 (Deceleration-UterusSynchronizedRangeUpper)
+#・①②③のうち2個以上成立ならLDと判定する
+#・軽度: 最下点の bpm 低下が、開始点から 15 bpm (Deceleration-LDLevelFallingThreshold) 未満
+#・高度: 最下点の bpm 低下が、開始点から 15 bpm (Deceleration-LDLevelFallingThreshold) 以上
+
+#LD の高度・軽度を判定する心拍の閾値 [bpm]
+Deceleration-LDLevelFallingThreshold: 15.0
+
+#VD (変動一過性徐脈) 定義パラメーター
+#ルール
+#・一過性徐脈の開始点から最下点までの時間 < 30 秒 (Deceleration-StartToPeakTimeLimit)
+#・一過性徐脈の開始点の値 - 最下点の値 >= 15 (Deceleration-VDFallingThreshold) bpm
+#・開始点から回復点まで 15 秒 (Deceleration-DurationDecisionThreshold) 以上、2 分 
+#  (Deceleration-DurationUpperLimit) 未満
+#・軽度: 高度ではない
+#・高度: 最下点が 70 bpm (Deceleration-VDminBpm1) 未満で
+#  開始点から回復点までの時間が 30 秒 (Deceleration-StartToRecoverTimeLimit1) 以上か (条件 1)、
+#  最下点が 70 (Deceleration-VDBpmRangeLower) bpm以上 80 (Deceleration-VDBpmRangeUpper) bpm 未満
+#で開始点から回復点までの時間が 60 秒 (Deceleration-StartToRecoverTimeLimit2) 以上 (条件2)のいずれかを満たす。
+
+#一過性徐脈の開始時点の心拍数と、最下点の心拍数の差がこの値以上で VD と判定します。[bpm]
+Deceleration-VDFallingThreshold: 15.0
+
+#開始時から回復点までの時間の閾値 [s]
+Deceleration-DurationDecisionThreshold: 15.0
+
+#VD のレベル判定条件 1 における心拍数の下限 [bpm]
+Deceleration-VDminBpm1: 70.0
+
+#VD のレベル判定条件 1 における開始時から終了時の時間の閾値 [s]
+Deceleration-StartToRecoverTimeLimit1: 30.0
+
+#VD のレベル判定条件 2 における 心拍数の上限 [bpm]
+Deceleration-VDBpmRangeUpper: 80.0
+
+#VD のレベル判定条件 2 における 心拍数の下限 [bpm]
+Deceleration-VDBpmRangeLower: 70.0
+
+#VD のレベル判定条件 2 における開始時から終了時の時間の閾値 [s]
+Deceleration-StartToRecoverTimeLimit2: 60.0
+
+
+# PD (遷延一過性徐脈) 定義パラメーター
+#ルール
+#・(一過性徐脈の開始点の値 - 最下点の値) >= 15 (Deceleration-PDFallingThreshold) bpm
+#・一過性徐脈の開始点から回復点までの時間 x が、
+#  2 (Deceleration-PDStartToRecoverTimeRangeLower) 分 <= x < 
+#  10 (Deceleration-PDStartToRecoverTimeRangeUpper)分
+#・軽度: 高度ではない
+#・高度: 最下点が 80 bpm 未満
+
+#(一過性徐脈の開始点の値 - 最下点の値)がこの値以下であると PD とする値 [bpm]
+Deceleration-PDFallingThreshold: 15.0
+
+#一過性徐脈の開始から終了までの時間上限 [s]
+Deceleration-PDStartToRecoverTimeRangeUpper: 600.0
+
+#一過性徐脈の開始から終了までの時間下限 [s]
+Deceleration-PDStartToRecoverTimeRangeLower: 120.0
+
+#最下点の心拍がこの値未満であると PD 高度と判定する値 [bpm]
+Deceleration-PDminBpm: 80.0
+
+
+#一過性頻脈定義パラメーター
+#ルール
+#・以下の定義に合致する開始点、最強点、回復点を有する波形を一過性頻脈とする。
+#・頻脈の基準となる基線は 5 (Acceleration-BaseDuratoin) 秒持続の基線とし、
+#  これは頻脈の判定のみに使用する。以下、これを頻脈用基線と呼ぶ。
+#・開始点を、基線から + 5 (Acceleration-StartThreshold) bpm を超えたとき、
+#  その時刻からさかのぼって傾き 0 (負から正) の点とする。
+#・最強点は開始点の値より 15 (Acceleration-PeakBpmLimit) bpm以上高い傾き 0 (正→負) の点とする。
+#・回復点は頻脈前に取得された頻脈用基線の平均値を x とすると
+#  x - 5 (Acceleration-EndSignalRangeUpper) bpm <= 信号 <= x + 5 (Acceleration-EndSignalRangeLower) bpm かつ 
+#  信号の傾きが0 (負→正)に代わる点
+#・開始点から回復点までの間に、頻脈開始前の頻脈用基線レベルから 
+#  -10 (Acceleration-FallingLimit) bpm 以上下落しない。
+#・開始点から最強点までの時間 < 30 (Acceleration-StartToPeakDurationLimit) 秒
+#・開始点から回復点までの時間を x とすると
+#  15 (Acceleration-DurationRangeLower) 秒 <= x < 2 (Acceleration-DurationRangeUpper) 分
+
+#頻脈の開始点を判定する心拍数の閾値 [bpm]
+Acceleration-StartThreshold: 5.0
+
+#頻脈開始点の心拍数からこの値以上高い心拍のピークの点を頻脈のピークとする値 [bpm]
+Acceleration-PeakBpmLimit:15.0
+
+#頻脈の開始から終了までの間に、基線からこの値以下になれば頻脈と判定しない値 [bpm]
+Acceleration-FallingLimit: 10.0
+
+#開始からピークまでの時間がこの値以下だと頻脈と判定する値 [s]
+Acceleration-StartToPeakDurationLimit: 30.0
+
+#頻脈の開始時間から終了時間がこの指定範囲内であると、頻脈と判定する範囲の上限 [s]
+Acceleration-DurationRangeUpper: 120
+
+#頻脈の開始時間から終了時間がこの指定範囲内であると、頻脈と判定する範囲の下限 [s]
+Acceleration-DurationRangeLower: 15
+
+#頻脈の基準とする基線 (頻脈用基線) の長さ [s]
+Acceleration-BaseDuratoin: 5.0
+
+#頻脈終了判定における信号の平均からのずれ幅の上限 [bpm]
+Acceleration-StartEndSignalRangeUpper: 5.0
+
+#頻脈終了判定における信号の平均からのずれ幅の下限 [bpm]
+Acceleration-StartEndSignalRangeLower: -5.0
