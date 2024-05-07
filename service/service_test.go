@@ -2,7 +2,7 @@ package service
 
 import (
 	"os"
-	"github.com/spiker/spiker-server/config"
+	""
 )
 
 func init() {
